@@ -158,27 +158,27 @@ internal struct CBORReader {
       let numBytes = try readLength(initByte, base: 0x40)
       return .byteString(try stream.readBytes(count: numBytes))
     case 0x5F:
-      return .byteString(try readIndefiniteByteString())
+      return .indefiniteByteString(try readIndefiniteByteString())
 
     // utf-8 strings
     case 0x60 ... 0x7B:
       return .utf8String(try readFiniteString(initByte: initByte))
     case 0x7F:
-      return .utf8String(try readIndefiniteString())
+      return .indefiniteUtf8String(try readIndefiniteString())
 
     // arrays
     case 0x80 ... 0x9B:
       let itemCount = try readLength(initByte, base: 0x80)
       return .array(try decodeItems(count: itemCount))
     case 0x9F:
-      return .array(try decodeItemsUntilBreak())
+      return .indefiniteArray(try decodeItemsUntilBreak())
 
     // pairs
     case 0xA0 ... 0xBB:
       let itemPairCount = try readLength(initByte, base: 0xA0)
       return .map(try decodeItemPairs(count: itemPairCount))
     case 0xBF:
-      return .map(try decodeItemPairsUntilBreak())
+      return .indefiniteMap(try decodeItemPairsUntilBreak())
 
     // tagged values
     case 0xC0 ... 0xDB:

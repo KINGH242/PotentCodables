@@ -219,6 +219,8 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
       return try box(value, encoder: encoder)
     case .string(let value):
       return try box(value, encoder: encoder)
+    case .indefiniteString(let value):
+      return try box(value, encoder: encoder)
     case .int8(let value):
       return try box(value, encoder: encoder)
     case .int16(let value):
@@ -249,6 +251,8 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
       return try box(value, encoder: encoder)
     case .data(let value):
       return try box(value, encoder: encoder)
+    case .indefiniteData(let value):
+      return try box(value, encoder: encoder)
     case .url(let value):
       return try box(value, encoder: encoder)
     case .uuid(let value):
@@ -257,7 +261,11 @@ public struct CBOREncoderTransform: InternalEncoderTransform, InternalValueSeria
       return try box(value, encoder: encoder)
     case .array(let value):
       return .array(.init(try value.map { try box($0, encoder: encoder) }))
+    case .indefiniteArray(let value):
+      return .indefiniteArray(.init(try value.map { try box($0, encoder: encoder) }))
     case .dictionary(let value):
+      return try encode(value)
+    case .indefiniteDictionary(let value):
       return try encode(value)
     }
   }

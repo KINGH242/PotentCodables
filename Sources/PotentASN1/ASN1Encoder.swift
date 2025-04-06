@@ -169,6 +169,7 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
     case .nil: return try encode(nil, encoder: encoder)
     case .bool(let value): return try encode(value, encoder: encoder)
     case .string(let value): return try encode(value, encoder: encoder)
+    case .indefiniteString(let value): return try encode(value, encoder: encoder)
     case .int8(let value): return try encode(value, encoder: encoder)
     case .int16(let value): return try encode(value, encoder: encoder)
     case .int32(let value): return try encode(value, encoder: encoder)
@@ -184,10 +185,11 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
     case .double(let value): return try encode(value, encoder: encoder)
     case .decimal(let value): return try encode(value, encoder: encoder)
     case .data(let value): return try encode(value, encoder: encoder)
+    case .indefiniteData(let value): return try encode(value, encoder: encoder)
     case .url(let value): return try encode(value.absoluteString, encoder: encoder)
     case .uuid(let value): return try encode(value.uuidString, encoder: encoder)
     case .date(let value): return try encode(value, encoder: encoder)
-    case .array(let value):
+    case .array(let value), .indefiniteArray(let value):
       return try encoder.subEncode { subEncoder in
 
         let container = subEncoder.unkeyedContainer()
@@ -199,7 +201,7 @@ public struct ASN1EncoderTransform: InternalEncoderTransform, InternalValueSeria
         }
 
       } ?? .null
-    case .dictionary(let value):
+    case .dictionary(let value), .indefiniteDictionary(let value):
       return try encoder.subEncode { subEncoder in
 
         let container = subEncoder.keyedContainer()

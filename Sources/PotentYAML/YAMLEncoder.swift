@@ -190,6 +190,9 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
     else if let value = value as? AnyValue.AnyDictionary {
       return try box(.dictionary(value), encoder: encoder)
     }
+    else if let value = value as? AnyValue.AnyIndefiniteDictionary {
+      return try box(.indefiniteDictionary(value), encoder: encoder)
+    }
     fatalError("type not valid for intercept")
   }
 
@@ -343,7 +346,11 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
       return try box(value, encoder: encoder)
     case .string(let value):
       return try box(value, encoder: encoder)
+    case .indefiniteString(let value):
+      return try box(value, encoder: encoder)
     case .data(let value):
+      return try box(value, encoder: encoder)
+    case .indefiniteData(let value):
       return try box(value, encoder: encoder)
     case .url(let value):
       return try box(value, encoder: encoder)
@@ -353,7 +360,13 @@ public struct YAMLEncoderTransform: InternalEncoderTransform, InternalValueSeria
       return try box(value, encoder: encoder)
     case .array(let value):
       return .sequence(try value.map { try box($0, encoder: encoder) })
+    case .indefiniteArray(let value):
+      return .sequence(try value.map { try box($0, encoder: encoder) })
     case .dictionary(let value):
+      return .mapping(try value.map {
+        YAML.MappingEntry(key: try box($0, encoder: encoder), value: try box($1, encoder: encoder))
+      })
+    case .indefiniteDictionary(let value):
       return .mapping(try value.map {
         YAML.MappingEntry(key: try box($0, encoder: encoder), value: try box($1, encoder: encoder))
       })

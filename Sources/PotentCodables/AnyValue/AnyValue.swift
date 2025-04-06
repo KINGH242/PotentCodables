@@ -38,11 +38,16 @@ public enum AnyValue {
   }
 
   public typealias AnyArray = [AnyValue]
+  public typealias AnyIndefiniteArray = [AnyValue]
   public typealias AnyDictionary = OrderedDictionary<AnyValue, AnyValue>
+  public typealias AnyIndefiniteDictionary = OrderedDictionary<AnyValue, AnyValue>
+  public typealias AnyIndefiniteString = String
+  public typealias AnyIndefiniteData = Data
 
   case `nil`
   case bool(Bool)
   case string(String)
+  case indefiniteString(AnyIndefiniteString)
   case int8(Int8)
   case int16(Int16)
   case int32(Int32)
@@ -58,11 +63,14 @@ public enum AnyValue {
   case double(Double)
   case decimal(Decimal)
   case data(Data)
+  case indefiniteData(AnyIndefiniteData)
   case url(URL)
   case uuid(UUID)
   case date(Date)
   case array(AnyArray)
+  case indefiniteArray(AnyIndefiniteArray)
   case dictionary(AnyDictionary)
+  case indefiniteDictionary(AnyIndefiniteDictionary)
 
   public static func int(_ value: Int) -> AnyValue {
     return MemoryLayout<Int>.size == 8 ? .int64(Int64(value)) : .int32(Int32(value))
@@ -103,6 +111,11 @@ public enum AnyValue {
     return value
   }
 
+  public var indefiniteStringValue: AnyIndefiniteString? {
+    guard case .indefiniteString(let value) = self else { return nil }
+    return value
+  }
+
   public var urlValue: URL? {
     guard case .url(let value) = self else { return nil }
     return value
@@ -118,6 +131,11 @@ public enum AnyValue {
     return value
   }
 
+  public var indefiniteDataValue: AnyIndefiniteData? {
+    guard case .indefiniteData(let value) = self else { return nil }
+    return value
+  }
+
   public var dateValue: Date? {
     guard case .date(let value) = self else { return nil }
     return value
@@ -128,8 +146,18 @@ public enum AnyValue {
     return value
   }
 
+  public var indefiniteArrayValue: AnyIndefiniteArray? {
+    guard case .indefiniteArray(let value) = self else { return nil }
+    return value
+  }
+
   public var dictionaryValue: AnyDictionary? {
     guard case .dictionary(let value) = self else { return nil }
+    return value
+  }
+
+  public var indefiniteDictionary: AnyIndefiniteDictionary? {
+    guard case .indefiniteDictionary(let value) = self else { return nil }
     return value
   }
 
@@ -317,12 +345,16 @@ extension AnyValue: CustomStringConvertible {
     case .double(let value): return value.description
     case .decimal(let value): return value.description
     case .string(let value): return value
+    case .indefiniteString(let value): return value
     case .date(let value): return ZonedDate(date: value, timeZone: .utc).iso8601EncodedString()
     case .data(let value): return value.description
+    case .indefiniteData(let value): return value.description
     case .uuid(let value): return value.uuidString
     case .url(let value): return value.absoluteString
     case .array(let value): return value.description
+    case .indefiniteArray(let value): return value.description
     case .dictionary(let value): return value.description
+    case .indefiniteDictionary(let value): return value.description
     }
   }
 
@@ -339,6 +371,7 @@ extension AnyValue {
     switch value {
     case let val as AnyValue: return val
     case let val as String: return .string(val)
+    case let val as AnyIndefiniteString: return .indefiniteString(val)
     case let val as Int: return .int(val)
     case let val as UInt: return .uint(val)
     case let val as Bool: return .bool(val)
@@ -357,12 +390,15 @@ extension AnyValue {
     case let val as BigInt: return .integer(val)
     case let val as BigUInt: return .unsignedInteger(val)
     case let val as Data: return .data(val)
+    case let val as AnyIndefiniteData: return .indefiniteData(val)
     case let val as URL: return .url(val)
     case let val as UUID: return .uuid(val)
     case let val as Date: return .date(val)
     case let val as AnyArray: return .array(val)
+    case let val as AnyIndefiniteArray: return .indefiniteArray(val)
     case let val as [Any]: return .array(try val.map { try wrapped($0) })
     case let val as AnyDictionary: return .dictionary(val)
+    case let val as AnyIndefiniteDictionary: return .indefiniteDictionary(val)
     case let val as [String: Any]:
       return .dictionary(AnyDictionary(uniqueKeysWithValues: try val.map { (try wrapped($0), try wrapped($1)) }))
     case let val as [Int: Any]:
@@ -400,6 +436,7 @@ extension AnyValue {
     case .nil: return nil
     case .bool(let value): return value
     case .string(let value): return value
+    case .indefiniteString(let value): return value
     case .int8(let value): return value
     case .int16(let value): return value
     case .int32(let value): return value
@@ -415,11 +452,14 @@ extension AnyValue {
     case .double(let value): return value
     case .decimal(let value): return value
     case .data(let value): return value
+    case .indefiniteData(let value): return value
     case .url(let value): return value
     case .uuid(let value): return value
     case .date(let value): return value
     case .array(let value): return Array(value.map(\.unwrapped))
+    case .indefiniteArray(let value): return Array(value.map(\.unwrapped))
     case .dictionary(let value): return unwrap(dictionary: value)
+    case .indefiniteDictionary(let value): return unwrap(dictionary: value)
     }
   }
 
@@ -444,6 +484,10 @@ extension AnyValue: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expres
     self = .string(value)
   }
 
+  public init(indefiniteStringLiteral value: AnyIndefiniteString) {
+    self = .indefiniteString(value)
+  }
+
   public init(integerLiteral value: IntegerLiteralType) {
     self = .int64(Int64(value))
   }
@@ -458,11 +502,21 @@ extension AnyValue: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, Expres
     self = .array(elements)
   }
 
+  public typealias IndefiniteArrayLiteralElement = AnyValue
+
+  public init(indefiniteArrayLiteral elements: ArrayLiteralElement...) {
+    self = .indefiniteArray(elements)
+  }
+
   public typealias Key = AnyValue
   public typealias Value = AnyValue
 
   public init(dictionaryLiteral elements: (Key, Value)...) {
     self = .dictionary(AnyDictionary(uniqueKeysWithValues: elements.map { ($0, $1) }))
+  }
+
+  public init(indefiniteDictionaryLiteral elements: (Key, Value)...) {
+    self = .indefiniteDictionary(AnyDictionary(uniqueKeysWithValues: elements.map { ($0, $1) }))
   }
 
 }
@@ -517,8 +571,18 @@ extension AnyValue: Decodable {
         return
       }
 
+      if let value = try? container.decode(AnyIndefiniteString.self) {
+        self = .indefiniteString(value)
+        return
+      }
+
       if let value = try? container.decode([AnyValue].self) {
         self = .array(value)
+        return
+      }
+
+      if let value = try? container.decode(AnyIndefiniteArray.self) {
+        self = .indefiniteArray(value)
         return
       }
 
@@ -552,6 +616,8 @@ extension AnyValue: Encodable {
       try container.encode(value)
     case .string(let value):
       try container.encode(value)
+    case .indefiniteString(let value):
+      try container.encode(value)
     case .int8(let value):
       try container.encode(value)
     case .int16(let value):
@@ -582,6 +648,8 @@ extension AnyValue: Encodable {
       try container.encode(value)
     case .data(let value):
       try container.encode(value)
+    case .indefiniteData(let value):
+      try container.encode(value)
     case .url(let value):
       try container.encode(value)
     case .uuid(let value):
@@ -590,7 +658,11 @@ extension AnyValue: Encodable {
       try container.encode(value)
     case .array(let value):
       try container.encode(value)
+    case .indefiniteArray(let value):
+      try container.encode(value)
     case .dictionary(let value):
+      try container.encode(value)
+    case .indefiniteDictionary(let value):
       try container.encode(value)
     }
   }

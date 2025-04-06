@@ -111,5 +111,19 @@ class CBORTests: XCTestCase {
       XCTAssertThrowsError(try CBOR.Decoder.default.decode(TestStruct.self, from: random))
     }
   }
+    
+    func testEncodeIndefiniteArrays() throws {
+        let array: CBOR = .indefiniteArray([1, 2])
+        
+        XCTAssertEqual(array, try CBORSerialization.cbor(from: Data([0x9F, 0x01, 0x02, 0xFF])))
+            
+    }
+    
+    func testEncodeIndefiniteMaps() throws {
+        let map: CBOR = .indefiniteMap(["a": 1, "B": 2])
+        
+        XCTAssertEqual(map, try CBORSerialization.cbor(from: Data([0xBF, 0x61, 0x61, 0x01, 0x61, 0x42, 0x02, 0xFF])))
+            
+    }
 
 }

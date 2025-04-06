@@ -405,7 +405,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
     }
 
     switch value {
-    case .utf8String(let string), .tagged(.iso8601DateTime, .utf8String(let string)):
+    case .utf8String(let string), .indefiniteUtf8String(let string), .tagged(.iso8601DateTime, .utf8String(let string)):
       return try decode(from: string)
     case .tagged(.epochDateTime, let number):
       return try unbox(number, type: TimeInterval.self, decoder: decoder).map { Date(timeIntervalSince1970: $0) }
@@ -427,7 +427,7 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
 
   public static func unbox(_ value: CBOR, as type: Data.Type, decoder: IVD) throws -> Data? {
     switch value {
-    case .byteString(let data), .tagged(_, .byteString(let data)): return data
+    case .byteString(let data), .indefiniteByteString(let data), .tagged(_, .byteString(let data)): return data
     case .tagged(.base64, .utf8String(let string)):
       guard let data = Data(base64EncodedUnpadded: string) else {
         throw DecodingError.dataCorruptedError(in: decoder, debugDescription: "Expected Base64 encoded string")
@@ -483,6 +483,14 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       }))
     }
 
+    func indefiniteDictionary(from value: CBOR.Map) throws -> AnyValue {
+      return .indefiniteDictionary(.init(uniqueKeysWithValues: try value.map { key, value in
+        let key = try unbox(key, as: AnyValue.self, decoder: decoder)
+        let value = try unbox(value, as: AnyValue.self, decoder: decoder)
+        return (key, value)
+      }))
+    }
+
     switch value {
     case .null, .undefined:
       return .nil
@@ -490,8 +498,12 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return .bool(value)
     case .utf8String(let value):
       return .string(value)
+    case .indefiniteUtf8String(let value):
+      return .indefiniteString(value)
     case .byteString(let value):
       return .data(value)
+    case .indefiniteByteString(let value):
+      return .indefiniteData(value)
     case .simple(let value):
       return .uint8(value)
     case .unsignedInt(let value):
@@ -511,8 +523,12 @@ public struct CBORDecoderTransform: InternalDecoderTransform, InternalValueDeser
       return .double(value)
     case .array(let value):
       return .array(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
+    case .indefiniteArray(let value):
+      return .indefiniteArray(try value.map { try unbox($0, as: AnyValue.self, decoder: decoder) })
     case .map(let value):
       return try dictionary(from: value)
+    case .indefiniteMap(let value):
+      return try indefiniteDictionary(from: value)
     case .tagged(.positiveBignum, _), .tagged(.negativeBignum, _):
       guard let int = try unbox(value, as: BigInt.self, decoder: decoder) else {
         throw DecodingError.typeMismatch(at: decoder.codingPath, expectation: BigInt.self, reality: value)

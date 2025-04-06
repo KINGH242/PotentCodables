@@ -41,9 +41,23 @@ internal struct CBORWriter {
     case .unsignedInt(let uint): try encodeVarUInt(uint)
     case .negativeInt(let nint): try encodeNegativeInt(Int64(bitPattern: ~nint))
     case .byteString(let str): try encodeByteString(str)
+    case .indefiniteByteString(let str): try encodeStream(.byteString) { streamWriter in
+        try streamWriter.encode(CBOR(str))
+    }
     case .utf8String(let str): try encodeString(str)
+    case .indefiniteUtf8String(let str): try encodeStream(.string) { streamWriter in
+        try streamWriter.encode(CBOR(str))
+    }
     case .array(let array): try encodeArray(array)
+    case .indefiniteArray(let array): try encodeStream(.array) { streamWriter in
+        try streamWriter.encodeArrayChunk(array)
+    }
     case .map(let map): try encodeMap(map)
+    case .indefiniteMap(let map): try encodeStream(.map) { streamWriter in
+        try map.forEach { key, value in
+            try streamWriter.encodeMapChunk([key: value])
+        }
+    }
     case .tagged(let tag, let value): try encodeTagged(tag: tag, value: value)
     case .simple(let value): try encodeSimpleValue(value)
     case .boolean(let bool): try encodeBool(bool)

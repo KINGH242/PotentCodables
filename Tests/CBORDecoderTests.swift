@@ -771,13 +771,13 @@ class CBORDecoderTests: XCTestCase {
     )
     // indefinite
     XCTAssertEqual(
-      try CBORDecoder.default.decode([Int].self, from: Data([0x9F, 0x04, 0x05, 0xFF])),
-      [4, 5]
+      try CBORDecoder.default.decode(AnyValue.self, from: Data([0x9F, 0x04, 0x05, 0xFF])),
+      .indefiniteArray([4, 5])
     )
     XCTAssertEqual(
       try CBORDecoder.default
-        .decode([[Int]].self, from: Data([0x9F, 0x81, 0x01, 0x82, 0x02, 0x03, 0x9F, 0x04, 0x05, 0xFF, 0xFF])),
-      [[1], [2, 3], [4, 5]]
+        .decode(AnyValue.self, from: Data([0x9F, 0x81, 0x01, 0x82, 0x02, 0x03, 0x9F, 0x04, 0x05, 0xFF, 0xFF])),
+      .indefiniteArray([[1], [2, 3], .indefiniteArray([4, 5])])
     )
   }
 
@@ -801,16 +801,16 @@ class CBORDecoderTests: XCTestCase {
       [-1: -2, -3: -4]
     )
     XCTAssertEqual(
-      try CBORDecoder.default.decode([String: String].self, from: Data([0xBF, 0x63, 0x46, 0x75, 0x6E, 0x61, 0x62,
+      try CBORDecoder.default.decode(AnyValue.self, from: Data([0xBF, 0x63, 0x46, 0x75, 0x6E, 0x61, 0x62,
                                                                         0x63, 0x41, 0x6D, 0x74, 0x61, 0x63, 0xFF])),
-      ["Fun": "b", "Amt": "c"]
+      .indefiniteDictionary(["Fun": "b", "Amt": "c"])
     )
     XCTAssertEqual(
-      try CBORDecoder.default.decode([String: [String: String]].self, from: Data([0xBF, 0x63, 0x46, 0x75, 0x6E, 0xA1,
+      try CBORDecoder.default.decode(AnyValue.self, from: Data([0xBF, 0x63, 0x46, 0x75, 0x6E, 0xA1,
                                                                                   0x61, 0x62, 0x61, 0x42, 0x63, 0x41,
                                                                                   0x6D, 0x74, 0xBF, 0x61, 0x63, 0x61,
                                                                                   0x43, 0xFF, 0xFF])),
-      ["Fun": ["b": "B"], "Amt": ["c": "C"]]
+      .indefiniteDictionary(["Fun": ["b": "B"], "Amt": .indefiniteDictionary(["c": "C"])])
     )
   }
 

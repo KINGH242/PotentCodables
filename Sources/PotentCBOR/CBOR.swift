@@ -57,9 +57,13 @@ public indirect enum CBOR {
   case unsignedInt(UInt64)
   case negativeInt(UInt64)
   case byteString(Data)
+  case indefiniteByteString(Data)
   case utf8String(String)
+  case indefiniteUtf8String(String)
   case array(Array)
+  case indefiniteArray(Array)
   case map(Map)
+  case indefiniteMap(Map)
   case tagged(Tag, CBOR)
   case simple(UInt8)
   case boolean(Bool)
@@ -152,8 +156,18 @@ public indirect enum CBOR {
     return data
   }
 
+  public var indefiniteByteStringValue: Data? {
+    guard case .indefiniteByteString(let data) = untagged else { return nil }
+    return data
+  }
+
   public var utf8StringValue: String? {
     guard case .utf8String(let string) = untagged else { return nil }
+    return string
+  }
+
+  public var indefiniteUtf8StringValue: String? {
+    guard case .indefiniteUtf8String(let string) = untagged else { return nil }
     return string
   }
 
@@ -162,8 +176,18 @@ public indirect enum CBOR {
     return array
   }
 
+  public var indefiniteArrayValue: Array? {
+    guard case .indefiniteArray(let array) = untagged else { return nil }
+    return array
+  }
+
   public var mapValue: Map? {
     guard case .map(let map) = untagged else { return nil }
+    return map
+  }
+
+  public var indefiniteMapValue: Map? {
+    guard case .indefiniteMap(let map) = untagged else { return nil }
     return map
   }
 
@@ -280,7 +304,9 @@ extension CBOR {
     case .undefined: return nil
     case .boolean(let value): return value
     case .utf8String(let value): return value
+    case .indefiniteUtf8String(let value): return value
     case .byteString(let value): return value
+    case .indefiniteByteString(let value): return value
     case .simple(let value): return value
     case .unsignedInt(let value): return value
     case .negativeInt(let value): return Int64(bitPattern: ~value)
@@ -288,7 +314,11 @@ extension CBOR {
     case .half(let value): return value
     case .double(let value): return value
     case .array(let value): return Swift.Array(value.map(\.unwrapped))
+    case .indefiniteArray(let value): return Swift.Array(value.map(\.unwrapped))
     case .map(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in
+        (key.unwrapped as? AnyHashable, value.unwrapped)
+      })
+    case .indefiniteMap(let value): return Dictionary(uniqueKeysWithValues: value.map { key, value in
         (key.unwrapped as? AnyHashable, value.unwrapped)
       })
     case .tagged(_, let value): return value.unwrapped
@@ -328,8 +358,16 @@ extension CBOR: ExpressibleByNilLiteral, ExpressibleByIntegerLiteral, Expressibl
     self = .array(elements)
   }
 
+  public init(indefiniteArrayLiteral elements: CBOR...) {
+    self = .indefiniteArray(elements)
+  }
+
   public init(dictionaryLiteral elements: (CBOR, CBOR)...) {
     self = .map(Map(uniqueKeysWithValues: elements))
+  }
+
+  public init(indefiniteDictionaryLiteral elements: (CBOR, CBOR)...) {
+    self = .indefiniteMap(Map(uniqueKeysWithValues: elements))
   }
 
   public init(booleanLiteral value: Bool) {
