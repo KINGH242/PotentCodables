@@ -176,7 +176,13 @@ internal struct CBORWriter {
   ///     - `Swift.Error`: If any I/O error occurs
   func encodeArrayChunk(_ chunk: CBOR.Array) throws {
     for item in chunk {
-      try encode(item)
+        if case .indefiniteArray(let array) = item {
+            try encodeStream(.array) { streamWriter in
+                try streamWriter.encodeArrayChunk(array)
+            }
+        } else {
+            try encode(item)
+        }
     }
   }
 

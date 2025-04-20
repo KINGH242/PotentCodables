@@ -775,6 +775,10 @@ class CBORDecoderTests: XCTestCase {
       .indefiniteArray([4, 5])
     )
     XCTAssertEqual(
+      try CBORDecoder.default.decode(AnyValue.self, from: Data([0x9F, 0x04, 0x05, 0x9F, 0x04, 0x05, 0xFF, 0xFF])),
+      .indefiniteArray([4, 5, .indefiniteArray([4, 5])])
+    )
+    XCTAssertEqual(
       try CBORDecoder.default
         .decode(AnyValue.self, from: Data([0x9F, 0x81, 0x01, 0x82, 0x02, 0x03, 0x9F, 0x04, 0x05, 0xFF, 0xFF])),
       .indefiniteArray([[1], [2, 3], .indefiniteArray([4, 5])])
